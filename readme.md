@@ -2,7 +2,7 @@
 
 A basic go app that loads images from a directory and displays the image on a web page.
 
-The app takes a local directory path as input, cleans up the file path (strips the path and starts a file server to serve images) and selected an image at random to display.
+The app takes a local directory path as input, cleans up the file path (strips the path and starts a file server to serve images) and selects an image at random to display.
 
 Every 10 seconds a new random image is selected to be displayed and the page automatically updated.
 
