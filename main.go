@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	"log"
 	"math/rand"
@@ -13,10 +14,13 @@ import (
 	"time"
 )
 
+//go:embed static/index.html
+var staticIndexFile string
+
 var (
 	randomImage       string
 	imageMutex        sync.Mutex // To ensure thread-safe access to `randomImage`
-	indexTemplatePath = "./index.html"
+	indexTemplatePath = "./static/index.html"
 )
 
 func init() {
@@ -188,7 +192,7 @@ func main() {
 
 	// Serve the page
 	http.HandleFunc("/", pageHandler)
-	log.Println("Starting server on :80")
-	log.Fatal(http.ListenAndServe(":80", nil))
+	log.Println("Starting server on :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
