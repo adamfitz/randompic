@@ -85,8 +85,8 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 		imageMutex.Lock()
 		defer imageMutex.Unlock()
 		// Strip the base directory and return a relative path
-		// Assuming randomImage is the absolute path, so remove "/mnt/photos/adam_pictures"
-		return "/images" + randomImage[len("/mnt/photos/adam_pictures"):]
+		// Assuming randomImage is the absolute path, so remove "/mnt/photos"
+		return "/images" + randomImage[len("/mnt/photos"):]
 	}()
 
 	// Render the template with image data
@@ -111,7 +111,7 @@ func loadAllImages(imageDirectory string) []string {
 	}
 
 	// List of file extensions to exclude
-	excludedExtensions := []string{".mp4", ".mov"}
+	excludedExtensions := []string{".mp4", ".mov", ".heic"}
 
 	// Filtered list of files
 	var filteredFiles []string
@@ -177,13 +177,13 @@ func updateImagePeriodically(fileList []string, interval time.Duration) {
 func main() {
 
 	// get the list of files (only runs once)
-	fileList := loadAllImages("/mnt/photos/adam_pictures")
+	fileList := loadAllImages("/mnt/photos")
 
 	// Start the image updater in a goroutine
 	go updateImagePeriodically(fileList, 10*time.Second)
 
 	// Serve images from the directory
-	imageDirectory := "/mnt/photos/adam_pictures"
+	imageDirectory := "/mnt/photos"
 	http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir(imageDirectory))))
 
 	// Serve the page
