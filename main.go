@@ -18,9 +18,12 @@ import (
 var staticIndexFile string
 
 var (
-	randomImage       string
-	imageMutex        sync.Mutex // To ensure thread-safe access to `randomImage`
-	indexTemplatePath = "./static/index.html"
+	randomImage   string
+	imageMutex    sync.Mutex         // To ensure thread-safe access to `randomImage`
+	IndexTemplate *template.Template // capitalised to allow "export" and usage in init funcion
+	/*
+		embed package includes the index file contents as a string but the template engine expects a file path.  Instead parse the string content instead of trying to use a filepath
+	*/
 )
 
 func init() {
@@ -29,6 +32,13 @@ func init() {
 		log.Fatalf("Failed to open log file: %v", err)
 	}
 	log.SetOutput(logFile)
+
+	// parse the embedded index.html string to create a new template "file"
+	var tmplErr error
+	IndexTemplate, tmplErr = template.New("index").Parse(staticIndexFile)
+	if err != nil {
+		log.Fatalf("Error parsing template: %v", tmplErr)
+	}
 }
 
 // ListFiles recursively traverses a directory and its subdirectories,
@@ -76,10 +86,10 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 		Receives the absolute location of an image file and renders it on the page.
 	*/
 
-	// Load the template from disk
-	tmplParsed, err := template.ParseFiles(indexTemplatePath)
+	// Parse the embedded template content once during initialization
+	tmplParsed, err := template.New("index").Parse(staticIndexFile)
 	if err != nil {
-		http.Error(w, "Error loading template: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Error parsing template: "+err.Error(), http.StatusInternalServerError)
 		log.Printf("Error parsing template: %v", err)
 		return
 	}
@@ -192,7 +202,7 @@ func main() {
 
 	// Serve the page
 	http.HandleFunc("/", pageHandler)
-	log.Println("Starting server on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Println("Starting server on :80")
+	log.Fatal(http.ListenAndServe(":80", nil))
 
 }
