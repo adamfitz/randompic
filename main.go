@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -28,6 +29,12 @@ var (
 	*/
 )
 
+// Config represents the configuration structure for exclusions
+type Config struct {
+	ExcludedExtensions  []string `json:"excludedExtensions"`
+	ExcludedDirectories []string `json:"excludedDirectories"`
+}
+
 func init() {
 	// Configure lumberjack logger for log rotation
 	log.SetOutput(&lumberjack.Logger{
@@ -44,6 +51,23 @@ func init() {
 	if tmplErr != nil {
 		log.Fatalf("Error parsing template: %v", tmplErr)
 	}
+}
+
+// loadConfig reads the exclusion configuration from a JSON file
+func loadConfig(configPath string) (*Config, error) {
+	file, err := os.Open(configPath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var config Config
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
 }
 
 // ListFiles recursively traverses a directory and its subdirectories,
@@ -115,31 +139,36 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// loadAllImages loads all images from a directory while applying exclusions
 func loadAllImages(imageDirectory string) []string {
 	/*
-		Load all images once and returns a string slice with the absolute location of all read images,
-		excluding certain files based on extension or prefix.
+		Load all images once and return a string slice with the absolute location of all read images,
+		excluding certain files based on extension or directory name substring.
 	*/
 
-	// Setup the root directory
-	rootDir := imageDirectory
-	files, err := ListFiles(rootDir)
+	// Load configuration
+	configPath := filepath.Join(".", "config.json")
+	config, err := loadConfig(configPath)
+	if err != nil {
+		log.Printf("Failed to load configuration: %v", err)
+		return []string{} // Return an empty slice if config loading fails
+	}
+
+	// Get the list of files
+	files, err := ListFiles(imageDirectory)
 	if err != nil {
 		log.Println("Error:", err)
 		return []string{} // Return an empty slice instead of nil
 	}
 
-	// List of file extensions to exclude
-	excludedExtensions := []string{".mp4", ".mov", ".heic"}
-
 	// Filtered list of files
 	var filteredFiles []string
 
-	// Loop through all the files and exclude the ones that match the conditions
+	// Loop through all the files and exclude those that match the conditions
 	for _, file := range files {
 		// Check if the file has an excluded extension
 		ext := strings.ToLower(filepath.Ext(file))
-		if contains(excludedExtensions, ext) {
+		if contains(config.ExcludedExtensions, ext) {
 			continue
 		}
 
@@ -148,7 +177,19 @@ func loadAllImages(imageDirectory string) []string {
 			continue
 		}
 
-		// Add the file to the filtered list if it passes both conditions
+		// Check if the file is in an excluded directory
+		excluded := false
+		for _, dirSubstring := range config.ExcludedDirectories {
+			if strings.Contains(filepath.Dir(file), dirSubstring) {
+				excluded = true
+				break
+			}
+		}
+		if excluded {
+			continue
+		}
+
+		// Add the file to the filtered list if it passes all conditions
 		filteredFiles = append(filteredFiles, file)
 	}
 

@@ -1,0 +1,4 @@
+{
+    "excludedExtensions": [".mp4", ".mov", ".heic"],
+    "excludedDirectories": ["2022-11-07"]
+}
