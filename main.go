@@ -195,8 +195,11 @@ func updateImagePeriodically(fileList []string, interval time.Duration) {
 
 func main() {
 
+	start := time.Now() // time the loading of images
 	// get the list of files (only runs once)
 	fileList := loadAllImages("/mnt/photos")
+	elapsed := time.Since(start)
+	log.Printf("Loading fileList from disk took: %s", elapsed)
 
 	// Start the image updater in a goroutine
 	go updateImagePeriodically(fileList, 10*time.Second)
