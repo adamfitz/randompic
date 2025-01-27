@@ -12,6 +12,8 @@ import (
 	"sync"
 	"text/template"
 	"time"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 //go:embed static/index.html
@@ -27,16 +29,19 @@ var (
 )
 
 func init() {
-	logFile, err := os.OpenFile("./randompic.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatalf("Failed to open log file: %v", err)
-	}
-	log.SetOutput(logFile)
+	// Configure lumberjack logger for log rotation
+	log.SetOutput(&lumberjack.Logger{
+		Filename:   "./randompic.log", // Log file name
+		MaxSize:    10,                // Maximum size in megabytes before it rotates
+		MaxBackups: 5,                 // Maximum number of old log files to keep
+		MaxAge:     0,                 // Maximum number of days to retain old logs (0 means no limit)
+		Compress:   false,             // Do not compress log files
+	})
 
 	// parse the embedded index.html string to create a new template "file"
 	var tmplErr error
 	IndexTemplate, tmplErr = template.New("index").Parse(staticIndexFile)
-	if err != nil {
+	if tmplErr != nil {
 		log.Fatalf("Error parsing template: %v", tmplErr)
 	}
 }
