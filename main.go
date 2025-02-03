@@ -33,6 +33,8 @@ var (
 type Config struct {
 	ExcludedExtensions  []string `json:"excludedExtensions"`
 	ExcludedDirectories []string `json:"excludedDirectories"`
+	ImageDirectory      string   `json:"imageDirectory"`
+	DisplaySeconds      int      `json:"displaySeconds"`
 }
 
 func init() {
@@ -115,6 +117,15 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 		Receives the absolute location of an image file and renders it on the page.
 	*/
 
+	// load config file to get the timeout value
+	configPath := filepath.Join(".", "config.json")
+	config, err := loadConfig(configPath)
+	if err != nil {
+		http.Error(w, "Error loading config: "+err.Error(), http.StatusInternalServerError)
+		log.Printf("Error loading config: %v", err)
+		return
+	}
+
 	// Parse the embedded template content once during initialization
 	tmplParsed, err := template.New("index").Parse(staticIndexFile)
 	if err != nil {
@@ -128,19 +139,26 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 		imageMutex.Lock()
 		defer imageMutex.Unlock()
 		// Strip the base directory and return a relative path
-		// Assuming randomImage is the absolute path, so remove "/mnt/photos"
-		return "/images" + randomImage[len("/mnt/photos"):]
+		// Assuming randomImage is the absolute path, so remove the provided path loaded from the configuratoin file
+		return "/images" + randomImage[len(config.ImageDirectory):]
 	}()
 
-	// Render the template with image data
-	if err := tmplParsed.Execute(w, struct{ ImageURL string }{ImageURL: image}); err != nil {
+	// Render the template with image data and timeout value
+	data := struct {
+		ImageURL       string
+		DisplaySeconds int
+	}{
+		ImageURL:       image,
+		DisplaySeconds: config.DisplaySeconds, // number of seconds to display an image pulled from the config file
+	}
+	if err := tmplParsed.Execute(w, data); err != nil {
 		http.Error(w, "Error rendering template: "+err.Error(), http.StatusInternalServerError)
 		log.Printf("Error executing template: %v", err)
 	}
 }
 
 // loadAllImages loads all images from a directory while applying exclusions
-func loadAllImages(imageDirectory string) []string {
+func loadAllImages() []string {
 	/*
 		Load all images once and return a string slice with the absolute location of all read images,
 		excluding certain files based on extension or directory name substring.
@@ -155,7 +173,7 @@ func loadAllImages(imageDirectory string) []string {
 	}
 
 	// Get the list of files
-	files, err := ListFiles(imageDirectory)
+	files, err := ListFiles(config.ImageDirectory)
 	if err != nil {
 		log.Println("Error:", err)
 		return []string{} // Return an empty slice instead of nil
@@ -238,16 +256,19 @@ func main() {
 
 	start := time.Now() // time the loading of images
 	// get the list of files (only runs once)
-	fileList := loadAllImages("/mnt/photos")
+	fileList := loadAllImages()
 	elapsed := time.Since(start)
 	log.Printf("Loading fileList from disk took: %s", elapsed)
 
+	// load config file
+	configPath := filepath.Join(".", "config.json")
+	config, _ := loadConfig(configPath)
+
 	// Start the image updater in a goroutine
-	go updateImagePeriodically(fileList, 10*time.Second)
+	go updateImagePeriodically(fileList, time.Duration(config.DisplaySeconds)*time.Second)
 
 	// Serve images from the directory
-	imageDirectory := "/mnt/photos"
-	http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir(imageDirectory))))
+	http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir(config.ImageDirectory))))
 
 	// Serve the page
 	http.HandleFunc("/", pageHandler)

@@ -1,4 +1,6 @@
 {
     "excludedExtensions": [".mp4", ".mov", ".heic"],
-    "excludedDirectories": ["2022-11-07"]
+    "excludedDirectories": ["2022-11-07"],
+    "imageDirectory": "/mnt/photos",
+    "displaySeconds": 10
 }

@@ -23,10 +23,12 @@
         }
     </style>
      <script>
-        // Refresh the page every 5 seconds
+        // Fetch timeout value from Go template
+        var refreshInterval="{{.DisplaySeconds}}"
+        // Refresh the page based on the configured displaySeconds value
         setTimeout(function(){
             location.reload();
-        }, 10000); // 10000 milliseconds = 10 seconds
+        }, refreshInterval);
     </script>
 </head>
 <body>
