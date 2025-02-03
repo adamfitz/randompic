@@ -18,9 +18,18 @@ Example of the config file from the repo and the corresponding values is seen be
 
 ```bash
 {
-    "excludedExtensions": [".mp4", ".mov", ".heic"],            # a list of strings containing the file extensions to exclude from display
-    "excludedDirectories": ["2022-11-07"],                      # a list of strings present in teh directories to exclude from being loaded
-    "imageDirectory": "/mnt/photos",                            # the absolute path to the directory to load the images from, in string format
-    "displaySeconds": 15                                        # an integer value in seconds which is the amount of time to display the image before moving to the next one
+    "excludedExtensions": [".mp4", ".mov", ".heic"],
+    "excludedDirectories": ["2022-11-07"],
+    "imageDirectory": "/mnt/photos",
+    "displaySeconds": 15
 }
 ```
+
+### Config file Values
+
+- excludedExtensions        - a list of strings containing the file extensions to exclude from display
+- excludedDirectories       - a list of strings present in teh directories to exclude from being loaded
+- imageDirectory            - the absolute path to the directory to load the images from, in string format
+- displaySeconds            - an integer value in seconds which is the amount of time to display the image before moving to the next one
+
+**NOTE:** This app was developed and tested on a linux system and this is the only intended target OS.
